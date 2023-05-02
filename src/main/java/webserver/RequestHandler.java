@@ -52,7 +52,7 @@ public class RequestHandler extends Thread {
 			String[] lines = line.split(" ");
 
 			String url = lines[1];
-
+ 
 			String[] root = url.split("/");
 			
 			
