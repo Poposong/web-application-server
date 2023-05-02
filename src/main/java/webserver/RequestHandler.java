@@ -65,7 +65,7 @@ public class RequestHandler extends Thread {
 				responseBody(dos, body);
 			} else if (root[1].equals("user")) { // TODO : GET /user/create?userId=yejin990508&password=1234&name=yejin
 				// .split("?")[1]
-				
+				 
 				if(root[2].equals("form.html")) { // TODO : POST /user/form.html
 					System.out.println("come!!!!!");
 				}else if(root[2].split("\\?")[0].equals("create")) {
