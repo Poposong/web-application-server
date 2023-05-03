@@ -10,12 +10,11 @@ public class IOUtils {
      * @param contentLength는
      *            Request Header의 Content-Length 값이다.
      * @return
-     * @throws IOException
+     * @throws IOException 
      */
     public static String readData(BufferedReader br, int contentLength) throws IOException {
         char[] body = new char[contentLength];
-        // br을 읽어서 body에 0부터 contentLength 까지 저장한다.
-        br.read(body, 0, contentLength); 
+        br.read(body, 0, contentLength);  // br을 읽어서 body에 0부터 contentLength 까지 저장한다.
         return String.copyValueOf(body);
     }
 }
