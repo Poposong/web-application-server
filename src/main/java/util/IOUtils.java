@@ -14,7 +14,8 @@ public class IOUtils {
      */
     public static String readData(BufferedReader br, int contentLength) throws IOException {
         char[] body = new char[contentLength];
-        br.read(body, 0, contentLength);
+        // br을 읽어서 body에 0부터 contentLength 까지 저장한다.
+        br.read(body, 0, contentLength); 
         return String.copyValueOf(body);
     }
 }

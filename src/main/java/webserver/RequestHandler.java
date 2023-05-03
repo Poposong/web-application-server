@@ -54,28 +54,28 @@ public class RequestHandler extends Thread {
 
 			String url = lines[1]; // 요청 url
 
-			String[] root = url.split("/");
-			
+			//String[] root = url.split("/");
+
 			// Http Header를 분석한다.
-			int contentLength = 0; 
+			int contentLen = 0;
 			boolean logined = false;
 			while (!"".equals(line)) {
 
 				line = br.readLine();
 
 				if (line.contains("Content-Length")) {
-					contentLength = Integer.parseInt(line.split(": ")[1]);
+					contentLen = contentLength(line);
 				} else if (line.contains("Cookie")) {
 					logined = isLogin(line);
 				}
 
 			}
-			
-			
 
 			if (url.equals("/user/create")) { // 회원가입
-				String pathVariable = IOUtils.readData(br, contentLength);
-
+				// byte형식으로 받아온 pathVariable을 String 타입으로 반환해서 변수에 저장한다.
+				String pathVariable = IOUtils.readData(br, contentLen);
+				
+				// pathVariable을 parsing한다.
 				Map<String, String> params = HttpRequestUtils.parseQueryString(pathVariable);
 				
 				User user = new User(params.get("userId"), params.get("password"), params.get("name"),
@@ -88,10 +88,10 @@ public class RequestHandler extends Thread {
 				response302Header(dos, "/index.html");
 
 			} else if (url.equals("/user/login")) { // 로그인
-				String pathVariable = IOUtils.readData(br, contentLength);
+				String pathVariable = IOUtils.readData(br, contentLen);
 
 				Map<String, String> params = HttpRequestUtils.parseQueryString(pathVariable);
-				
+
 				User user = DataBase.findUserById(params.get("userId"));
 
 				if (user == null) {// DB에 회원의 정보가 없는 경우
@@ -105,8 +105,8 @@ public class RequestHandler extends Thread {
 				} else {
 					responseResource(out, "/user/login_failed.html"); // 로그인에 실패한 경우
 				}
-			}else if(url.equals("/user/list")) { // 사용자의 목록을 조회한다.
-				if(!logined) {
+			} else if (url.equals("/user/list")) { // 사용자의 목록을 조회한다.
+				if (!logined) {
 					responseResource(out, "/user/login.html");
 					return;
 				}
@@ -114,11 +114,11 @@ public class RequestHandler extends Thread {
 				StringBuilder sb = new StringBuilder();
 				sb.append("<table border='1'>");
 				sb.append("<tr> <td>아이디</td> <td>이름</td> <td>이메일</td> </tr>");
-				for(User user : userList) {
+				for (User user : userList) {
 					sb.append("<tr>");
-					sb.append("<td>"+user.getUserId()+"</td>");
-					sb.append("<td>"+user.getName()+"</td>");
-					sb.append("<td>"+user.getEmail()+"</td>");
+					sb.append("<td>" + user.getUserId() + "</td>");
+					sb.append("<td>" + user.getName() + "</td>");
+					sb.append("<td>" + user.getEmail() + "</td>");
 					sb.append("</tr>");
 				}
 				sb.append("</table>");
@@ -126,35 +126,32 @@ public class RequestHandler extends Thread {
 				DataOutputStream dos = new DataOutputStream(out);
 				response200Header(dos, body.length);
 				responseBody(dos, body);
-			}else if(url.endsWith(".css")) {
+			} else if (url.endsWith(".css")) {
 				DataOutputStream dos = new DataOutputStream(out);
 				byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
 				response200CssHeader(dos, body.length);
 				responseBody(dos, body);
-			}else {
+			} else {
 				responseResource(out, url);
 			}
-			
-
-//			if (lines[0].equals("POST")) { // POST 방식으로 요청이 들어오는 경우
-//
-//				
-//			} else if (lines[0].equals("GET")) { // GET 방식으로 요청이 들어오는 경우
-//				responseResource(out, url);
-//			}
 
 		} catch (IOException e) {
 			log.error(e.getMessage());
 		}
 	}
 	
-	// ● isLogin : Cooki의 상태를 반환하는 메소드 
-	//             Ex) line의 형태 → Cookie: logined=true
+	// ● contentLength : content-Length의 길이를 반환하는 메소드
+	public int contentLength(String line) {
+		return Integer.parseInt(line.split(": ")[1]);
+	}
+
+	// ● isLogin : Cookie의 상태를 반환하는 메소드
+	// Ex) line의 형태 → Cookie: logined=true
 	public boolean isLogin(String line) {
 		String state = line.split(": ")[1].split("=")[1];
 		return Boolean.parseBoolean(state);
 	}
-	
+
 	// ● response302Header : Header의 상태 코드를 302으로 하고 url의 경로로 redirect 하는 메소드
 	private void response302Header(DataOutputStream dos, String url) {
 		try {
@@ -165,7 +162,7 @@ public class RequestHandler extends Thread {
 			log.error(e.getMessage());
 		}
 	}
-	
+
 	// ● response200Header : Header의 상태 코드를 200으로 하고 pathVariable의 길이를 반환하는 메소드
 	private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
 		try {
@@ -178,26 +175,26 @@ public class RequestHandler extends Thread {
 		}
 	}
 	
-	
+	// ● responseBody : 응답 body를 출력스트림에 쓰고 server로 HTTP header, body를 보낸다.
 	private void responseBody(DataOutputStream dos, byte[] body) {
 		try {
-			dos.write(body, 0, body.length);
-			dos.flush();
+			dos.write(body, 0, body.length); // body를 출력스트림에 쓴다.
+			dos.flush(); // 보낸다.
 		} catch (IOException e) {
 			log.error(e.getMessage());
 		}
 	}
-
+	
+	// ● responseResource : HTTP header와 Body를 생성한다. 
 	private void responseResource(OutputStream out, String url) throws IOException {
 		DataOutputStream dos = new DataOutputStream(out);
 		byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
 		response200Header(dos, body.length);
 		responseBody(dos, body);
 	}
-	
+
 	// ● response302LoginSuccessHeader : 로그인을 했으므로 Cookie의 상태를 true로 만들고 index.html로 redirect하는 메소드
 	private void response302LoginSuccessHeader(DataOutputStream dos) {
-
 		try {
 			dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
 			dos.writeBytes("Set-Cookie: logined=true \r\n");
@@ -207,13 +204,14 @@ public class RequestHandler extends Thread {
 		}
 	}
 	
+	// ● response200CssHeader : Http Header를 생성하는 메소드
 	private void response200CssHeader(DataOutputStream dos, int lengthOfBodyContent) {
 		try {
 			dos.writeBytes("HTTP/1.1 200 OK \r\n");
 			dos.writeBytes("Content-Type: text/css\r\n");
-			dos.writeBytes("Content-Length: "+lengthOfBodyContent+"\r\n");
+			dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
 			dos.writeBytes("\r\n");
-		}catch(Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
